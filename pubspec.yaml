@@ -1,6 +1,7 @@
 name: natureheal_ai
-description: A new Flutter project built via GitHub Actions.
+description: A health portal app for NatureHeal AI.
 publish_to: 'none'
+
 version: 1.0.0+1
 
 environment:
@@ -9,7 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.2
+  # እዚህ ላይ ነው ዋናው ፓኬጅ የተጨመረው! 👇
+  supabase_flutter: ^2.5.0
 
 dev_dependencies:
   flutter_test:
