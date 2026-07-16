@@ -8,7 +8,6 @@ import 'package:google_generative_ai/google_generative_ai.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // የ Supabase ግንኙነት
   await Supabase.initialize(
     url: 'https://mstphukumdxcsvtrelkd.supabase.co',
     anonKey: 'sb_publishable_FckQyv4DiWQGEa20E_s0bQ_PZVhe15d',
@@ -52,31 +51,100 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
   bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
 
-  // ጋለሪ ወይም ካሜራ ለመምረጥ
+  // የቋንቋ ትርጉም ለ UI (አፕሊኬሽኑ ላይ ለሚታዩ ፅሁፎች)
+  final Map<String, Map<String, String>> uiTexts = {
+    'አማርኛ': {
+      'title': 'የጤናዎ ባለሙያ!',
+      'subtitle': 'እፅዋትን፣ ማዕድናትን ወይም ህመምዎን በመግለፅ በ AI የታገዘ ትንተና ያግኙ።',
+      'hint': 'ህመምዎን ወይም እፅዋቱን ይፃፉ...',
+      'scan_btn': 'ምስል አስገባ (Scan)',
+      'camera': 'ፎቶ አንሳ (Camera)',
+      'gallery': 'ከጋለሪ ምረጥ (Gallery)',
+      'analyzing': 'AI መረጃውን እያጠናቀረ ነው... እባክዎ ይጠብቁ',
+      'error': 'ከ AI ጋር መገናኘት አልተቻለም! ኢንተርኔትዎን ያረጋግጡ።',
+    },
+    'English': {
+      'title': 'Your Health Expert!',
+      'subtitle': 'Get AI-powered analysis by describing plants, minerals, or your symptoms.',
+      'hint': 'Type your symptom or plant...',
+      'scan_btn': 'Upload Image (Scan)',
+      'camera': 'Take Photo (Camera)',
+      'gallery': 'Choose from Gallery',
+      'analyzing': 'AI is analyzing... please wait',
+      'error': 'Failed to connect to AI! Check your internet.',
+    },
+  };
+
+  // የ API ቁልፍህ
+  final String apiKey = 'AQ.Ab8RN6LB6FH4jazQkgbO_gxhT7wiJJSFlJF-mHIi2vFztL6EpA';
+
+  // 1. በፅሁፍ ለሚላክ ጥያቄ AI-ውን የሚያነጋግረው ክፍል
+  Future<void> _submitTextQuery() async {
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+
+    setState(() {
+      _isAnalyzing = true;
+      _selectedImage = null; // ምስል ካለ እናጠፋዋለን
+    });
+
+    try {
+      final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+      final promptText = 'Answer in $selectedLanguage. The user is asking about a health condition, plant, or mineral: "$query". Please analyze this and provide: 1. Name/Identification, 2. Nutrients/Vitamins (if applicable), 3. Health benefits, 4. Traditional medicine use, 5. Modern medicine synergy.';
+      
+      final response = await model.generateContent([Content.text(promptText)]);
+      _showAnalysisResult(response.text ?? 'ምንም መረጃ አልተገኘም።');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uiTexts[selectedLanguage]!['error']!)));
+    } finally {
+      setState(() { _isAnalyzing = false; });
+    }
+  }
+
+  // 2. በምስል (ስካን) ለሚላክ ጥያቄ AI-ውን የሚያነጋግረው ክፍል
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? photo = await _picker.pickImage(source: source);
+      if (photo != null) {
+        setState(() {
+          _selectedImage = File(photo.path);
+          _isAnalyzing = true;
+          _searchController.clear(); // ፅሁፉን እናጠፋዋለን
+        });
+
+        final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+        final imageBytes = await _selectedImage!.readAsBytes();
+        
+        final promptText = 'Answer in $selectedLanguage. Analyze this image. If it is a plant, fruit, mineral, or symptom, provide: 1. Name, 2. Nutrients/Vitamins, 3. Health benefits, 4. Traditional medicine use, 5. Modern medicine synergy.';
+        final response = await model.generateContent([
+          Content.multi([TextPart(promptText), DataPart('image/jpeg', imageBytes)])
+        ]);
+
+        _showAnalysisResult(response.text ?? 'ምስሉን በሚገባ መተንተን አልተቻለም።');
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uiTexts[selectedLanguage]!['error']!)));
+    } finally {
+      setState(() { _isAnalyzing = false; });
+    }
+  }
+
   void _showImageSourceActionSheet() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (context) => SafeArea(
         child: Wrap(
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera, color: Color(0xFF1B5E20)),
-              title: const Text('ፎቶ አንሳ (Camera)'),
-              onTap: () {
-                Navigator.of(context).pop();
-                _pickImage(ImageSource.camera);
-              },
+              title: Text(uiTexts[selectedLanguage]!['camera']!),
+              onTap: () { Navigator.pop(context); _pickImage(ImageSource.camera); },
             ),
             ListTile(
               leading: const Icon(Icons.photo_library, color: Color(0xFF1B5E20)),
-              title: const Text('ከጋለሪ ምረጥ (Gallery)'),
-              onTap: () {
-                Navigator.of(context).pop();
-                _pickImage(ImageSource.gallery);
-              },
+              title: Text(uiTexts[selectedLanguage]!['gallery']!),
+              onTap: () { Navigator.pop(context); _pickImage(ImageSource.gallery); },
             ),
           ],
         ),
@@ -84,51 +152,6 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
     );
   }
 
-  // ፎቶ ከተመረጠ በኋላ እውነተኛውን Gemini AI የሚያነጋግረው ክፍል
-  Future<void> _pickImage(ImageSource source) async {
-    try {
-      final XFile? photo = await _picker.pickImage(source: source);
-      
-      if (photo != null) {
-        setState(() {
-          _selectedImage = File(photo.path);
-          _isAnalyzing = true;
-        });
-
-        // 1. የሰጠኸኝን የ Gemini ቁልፍ እናዘጋጃለን
-        const apiKey = 'AQ.Ab8RN6LB6FH4jazQkgbO_gxhT7wiJJSFlJF-mHIi2vFztL6EpA';
-        final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
-        
-        // 2. ምስሉን ወደ ዳታ እንቀይረዋለን
-        final imageBytes = await _selectedImage!.readAsBytes();
-        
-        // 3. ለ AI የምንሰጠው ትዕዛዝ (Prompt) በመረጥከው ቋንቋ እንዲመልስ
-        final promptText = 'ይህንን ምስል በጥልቀት መርምር። በምስሉ ላይ ያለው እፅዋት፣ ፍራፍሬ፣ ማዕድን ወይም የሰውነት ክፍል ከሆነ፡ 1. ስሙን፣ 2. በውስጡ ያሉትን ንጥረ ነገሮች (ቪታሚን/ፕሮቲን)፣ 3. የጤና ጥቅሙን፣ 4. የባህል ህክምና አጠቃቀሙን እና 5. ከዘመናዊ መድሃኒት ጋር ያለውን ግንኙነት በዝርዝር በ $selectedLanguage ቋንቋ ፃፍልኝ።';
-        
-        final prompt = TextPart(promptText);
-        final imagePart = DataPart('image/jpeg', imageBytes);
-
-        // 4. ወደ AI ልከን መልሱን እንጠብቃለን
-        final response = await model.generateContent([
-          Content.multi([prompt, imagePart])
-        ]);
-
-        setState(() {
-          _isAnalyzing = false;
-        });
-
-        // 5. የመጣውን እውነተኛ ውጤት እናሳያለን
-        _showAnalysisResult(response.text ?? 'ይቅርታ፣ ምስሉን በሚገባ መተንተን አልተቻለም።');
-      }
-    } catch (e) {
-      setState(() { _isAnalyzing = false; });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('ከ AI ጋር መገናኘት አልተቻለም: የኢንተርኔት ግንኙነትዎን ያረጋግጡ።')),
-      );
-    }
-  }
-
-  // የ AI ትንተና ውጤት ማሳያ
   void _showAnalysisResult(String resultText) {
     showDialog(
       context: context,
@@ -138,27 +161,33 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
           children: [
             const Icon(Icons.auto_awesome, color: Colors.blueAccent),
             const SizedBox(width: 10),
-            Text('የ AI ትንተና', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('AI Analysis', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
         content: SingleChildScrollView(
-          child: Text(
-            resultText,
-            style: const TextStyle(fontSize: 15, height: 1.6),
-          ),
+          child: Text(resultText, style: const TextStyle(fontSize: 15, height: 1.6)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('ዝጋ', style: TextStyle(color: Color(0xFF1B5E20))),
+            child: const Text('Close', style: TextStyle(color: Color(0xFF1B5E20))),
           ),
         ],
       ),
     );
   }
 
+  // የድምፅ ቅረፃ (ለጊዜው መልዕክት ብቻ የሚያሳይ)
+  void _handleVoiceInput() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('የድምፅ ቅረፃን ለመጠቀም በአንድሮይድ ላይ Audio Permission ማስተካከል ስለሚጠይቅ በቅርቡ ይጨመራል!')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final textData = uiTexts[selectedLanguage]!;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -181,11 +210,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                     const SizedBox(width: 10),
                     Text(
                       'NatureHeal AI',
-                      style: GoogleFonts.poppins(
-                        color: const Color(0xFF1B5E20),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 24,
-                      ),
+                      style: GoogleFonts.poppins(color: const Color(0xFF1B5E20), fontWeight: FontWeight.bold, fontSize: 24),
                     ),
                   ],
                 ),
@@ -196,12 +221,10 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                       child: DropdownButton<String>(
                         value: selectedLanguage,
                         icon: const Icon(Icons.language, color: Color(0xFF1B5E20)),
-                        items: <String>['አማርኛ', 'English', 'Afaan Oromoo', 'Tigrinya']
-                            .map((String value) => DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
-                                ))
-                            .toList(),
+                        items: ['አማርኛ', 'English'].map((String value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        )).toList(),
                         onChanged: (String? newValue) {
                           setState(() { selectedLanguage = newValue!; });
                         },
@@ -216,42 +239,38 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'የጤናዎ ባለሙያ!',
-                        style: GoogleFonts.notoSans(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: const Color(0xFF2E7D32),
-                        ),
-                      ),
+                      Text(textData['title']!, style: GoogleFonts.notoSans(fontSize: 32, fontWeight: FontWeight.bold, color: const Color(0xFF2E7D32))),
                       const SizedBox(height: 10),
-                      Text(
-                        'እፅዋትን፣ ማዕድናትን ወይም ህመምዎን በመግለፅ በ AI የታገዘ ትንተና ያግኙ።',
-                        style: TextStyle(fontSize: 16, color: Colors.grey[800], height: 1.5),
-                      ),
+                      Text(textData['subtitle']!, style: TextStyle(fontSize: 16, color: Colors.grey[800], height: 1.5)),
                       const SizedBox(height: 30),
                       
+                      // የፍለጋ ሳጥን ከተጨማሪ የመላኪያ (Send) ቁልፍ ጋር
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black.withOpacity(0.05), spreadRadius: 2, blurRadius: 15),
-                          ],
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), spreadRadius: 2, blurRadius: 15)],
                         ),
                         child: TextField(
                           controller: _searchController,
+                          onSubmitted: (value) => _submitTextQuery(),
                           decoration: InputDecoration(
-                            hintText: 'ህመምዎን ወይም እፅዋቱን ይፃፉ...',
+                            hintText: textData['hint']!,
                             border: InputBorder.none,
                             contentPadding: const EdgeInsets.all(20),
                             prefixIcon: const Icon(Icons.search, color: Colors.grey),
                             suffixIcon: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                IconButton(icon: const Icon(Icons.mic, color: Colors.blueAccent), onPressed: () {}),
-                                IconButton(icon: const Icon(Icons.center_focus_strong, color: Color(0xFF1B5E20)), onPressed: _showImageSourceActionSheet),
-                                const SizedBox(width: 10),
+                                IconButton(
+                                  icon: const Icon(Icons.mic, color: Colors.blueAccent),
+                                  onPressed: _handleVoiceInput,
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.send, color: Color(0xFF1B5E20)),
+                                  onPressed: _submitTextQuery, // ይህ የመላኪያ (Send) ቁልፍ ነው!
+                                ),
+                                const SizedBox(width: 5),
                               ],
                             ),
                           ),
@@ -261,27 +280,26 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                       
                       if (_selectedImage != null)
                         Center(
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 20),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.file(_selectedImage!, height: 250, width: double.infinity, fit: BoxFit.cover),
+                            ),
+                          ),
+                        ),
+                        
+                      if (_isAnalyzing)
+                        Center(
                           child: Column(
                             children: [
-                              Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 10)],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Image.file(_selectedImage!, height: 300, width: double.infinity, fit: BoxFit.cover),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              if (_isAnalyzing)
-                                Column(
-                                  children: [
-                                    const CircularProgressIndicator(color: Color(0xFF1B5E20)),
-                                    const SizedBox(height: 15),
-                                    Text('AI ምስሉን እያጠናቀረ ነው... እባክዎ ይጠብቁ', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold, fontSize: 16)),
-                                  ],
-                                ),
+                              const CircularProgressIndicator(color: Color(0xFF1B5E20)),
+                              const SizedBox(height: 15),
+                              Text(textData['analyzing']!, style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold, fontSize: 16)),
                             ],
                           ),
                         )
@@ -298,7 +316,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
         backgroundColor: const Color(0xFF1B5E20),
         elevation: 4,
         icon: const Icon(Icons.document_scanner, color: Colors.white),
-        label: const Text('ምስል አስገባ (Scan)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        label: Text(textData['scan_btn']!, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
       ),
     );
   }
