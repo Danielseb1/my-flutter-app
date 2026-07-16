@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // የ Supabase ግንኙነት
   await Supabase.initialize(
     url: 'https://mstphukumdxcsvtrelkd.supabase.co',
     anonKey: 'sb_publishable_FckQyv4DiWQGEa20E_s0bQ_PZVhe15d',
@@ -50,7 +52,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
   bool _isAnalyzing = false;
   final ImagePicker _picker = ImagePicker();
 
-  // ጋለሪ ወይም ካሜራ ለመምረጥ የሚያስችል ፕሮፌሽናል ማውጫ (Bottom Sheet)
+  // ጋለሪ ወይም ካሜራ ለመምረጥ
   void _showImageSourceActionSheet() {
     showModalBottomSheet(
       context: context,
@@ -82,6 +84,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
     );
   }
 
+  // ፎቶ ከተመረጠ በኋላ እውነተኛውን Gemini AI የሚያነጋግረው ክፍል
   Future<void> _pickImage(ImageSource source) async {
     try {
       final XFile? photo = await _picker.pickImage(source: source);
@@ -92,23 +95,41 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
           _isAnalyzing = true;
         });
 
-        // ማሳሰቢያ፡ እዚህ ጋር ነው እውነተኛው የ Gemini AI ወደፊት የሚገባው!
-        await Future.delayed(const Duration(seconds: 3));
+        // 1. የሰጠኸኝን የ Gemini ቁልፍ እናዘጋጃለን
+        const apiKey = 'AQ.Ab8RN6LB6FH4jazQkgbO_gxhT7wiJJSFlJF-mHIi2vFztL6EpA';
+        final model = GenerativeModel(model: 'gemini-1.5-flash', apiKey: apiKey);
+        
+        // 2. ምስሉን ወደ ዳታ እንቀይረዋለን
+        final imageBytes = await _selectedImage!.readAsBytes();
+        
+        // 3. ለ AI የምንሰጠው ትዕዛዝ (Prompt) በመረጥከው ቋንቋ እንዲመልስ
+        final promptText = 'ይህንን ምስል በጥልቀት መርምር። በምስሉ ላይ ያለው እፅዋት፣ ፍራፍሬ፣ ማዕድን ወይም የሰውነት ክፍል ከሆነ፡ 1. ስሙን፣ 2. በውስጡ ያሉትን ንጥረ ነገሮች (ቪታሚን/ፕሮቲን)፣ 3. የጤና ጥቅሙን፣ 4. የባህል ህክምና አጠቃቀሙን እና 5. ከዘመናዊ መድሃኒት ጋር ያለውን ግንኙነት በዝርዝር በ $selectedLanguage ቋንቋ ፃፍልኝ።';
+        
+        final prompt = TextPart(promptText);
+        final imagePart = DataPart('image/jpeg', imageBytes);
+
+        // 4. ወደ AI ልከን መልሱን እንጠብቃለን
+        final response = await model.generateContent([
+          Content.multi([prompt, imagePart])
+        ]);
 
         setState(() {
           _isAnalyzing = false;
         });
 
-        _showAnalysisResult();
+        // 5. የመጣውን እውነተኛ ውጤት እናሳያለን
+        _showAnalysisResult(response.text ?? 'ይቅርታ፣ ምስሉን በሚገባ መተንተን አልተቻለም።');
       }
     } catch (e) {
+      setState(() { _isAnalyzing = false; });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ምስሉን ማግኘት አልተቻለም!')),
+        SnackBar(content: Text('ከ AI ጋር መገናኘት አልተቻለም: የኢንተርኔት ግንኙነትዎን ያረጋግጡ።')),
       );
     }
   }
 
-  void _showAnalysisResult() {
+  // የ AI ትንተና ውጤት ማሳያ
+  void _showAnalysisResult(String resultText) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -117,10 +138,15 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
           children: [
             const Icon(Icons.auto_awesome, color: Colors.blueAccent),
             const SizedBox(width: 10),
-            Text('AI ትንተና', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 18)),
+            Text('የ AI ትንተና', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold, fontSize: 18)),
           ],
         ),
-        content: const Text('የ AI ትንተና ውጤት ለማግኘት የ Gemini API ቁልፍ (Key) ማስገባት ይቀረናል! እሱን ስናስገባ እውነተኛውን ውጤት ይሰጠናል!'),
+        content: SingleChildScrollView(
+          child: Text(
+            resultText,
+            style: const TextStyle(fontSize: 15, height: 1.6),
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -134,7 +160,6 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // ፕሮፌሽናል አረንጓዴ እና ነጭ የቀለም ቅንብር (Gradient)
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -206,7 +231,6 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                       ),
                       const SizedBox(height: 30),
                       
-                      // የፍለጋ ሳጥን (Search Box)
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.white,
@@ -255,7 +279,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                                   children: [
                                     const CircularProgressIndicator(color: Color(0xFF1B5E20)),
                                     const SizedBox(height: 15),
-                                    Text('የ Gemini AI መረጃውን እያጠናቀረ ነው...', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold, fontSize: 16)),
+                                    Text('AI ምስሉን እያጠናቀረ ነው... እባክዎ ይጠብቁ', style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold, fontSize: 16)),
                                   ],
                                 ),
                             ],
