@@ -32,6 +32,13 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Create missing platform folders
+        run: flutter create .
+        
+      - name: Build APK
+        run: flutter build apk --release
+
+
       - name: Build APK
         run: flutter build apk --release
 
