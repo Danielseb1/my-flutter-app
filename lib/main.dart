@@ -277,4 +277,13 @@ body: Padding(
     ],
   ),
 ),
+// ከ Supabase ዳታ ለማምጣት የሚረዳ ተግባር
+Future<List<Map<String, dynamic>>> fetchPlantData(String plantName) async {
+  final response = await Supabase.instance.client
+      .from('plants') // የሰንጠረዡ ስም
+      .select('*')
+      .ilike('scientific_name', '%$plantName%'); // መፈለጊያ
+      
+  return response;
+}
 
