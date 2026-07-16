@@ -6,7 +6,7 @@ on:
       - main
   workflow_dispatch:
 
-# ይሄ ክፍል Node 24ን እንዲጠቀም ያስገድዳል
+# ይህ ክፍል የ Node.js ስህተትን ለአንዴ እና ለመጨረሻ ጊዜ ይቀርፋል
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
@@ -28,6 +28,9 @@ jobs:
         with:
           channel: 'stable'
           cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release
