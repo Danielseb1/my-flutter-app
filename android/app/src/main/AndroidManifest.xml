@@ -1,1 +1,7 @@
-    <uses-permission android:name="android.permission.INTERNET" />
+
+package com.example.natureheal_ai
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity: FlutterActivity() {
+}
