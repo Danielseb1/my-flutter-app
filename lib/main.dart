@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +25,7 @@ class NatureHealApp extends StatelessWidget {
       title: 'NatureHeal AI',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)), // ፕሮፌሽናል አረንጓዴ ቀለም
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
         useMaterial3: true,
         textTheme: GoogleFonts.notoSansTextTheme(
           Theme.of(context).textTheme,
@@ -44,18 +46,72 @@ class MainPortalScreen extends StatefulWidget {
 class _MainPortalScreenState extends State<MainPortalScreen> {
   String selectedLanguage = 'አማርኛ';
   final TextEditingController _searchController = TextEditingController();
+  
+  // የካሜራ እና የምስል ተለዋዋጮች
+  File? _selectedImage;
+  bool _isScanning = false;
+  final ImagePicker _picker = ImagePicker();
 
-  void _openCameraScanner() {
-    // ካሜራ ከፍቶ እፅዋቱን የሚያውቅበት AI እዚህ ወደፊት ይገባል
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('የካሜራ እና AI ማወቂያ በቅርቡ ይገናኛል...')),
-    );
+  // ካሜራውን የሚከፍተው ተግባር
+  Future<void> _openCameraScanner() async {
+    try {
+      final XFile? photo = await _picker.pickImage(source: ImageSource.camera);
+      
+      if (photo != null) {
+        setState(() {
+          _selectedImage = File(photo.path);
+          _isScanning = true;
+        });
+
+        // AI ምስሉን እየመረመረ መሆኑን ለማስመሰል የ3 ሰከንድ ጥበቃ (ወደፊት ከእውነተኛው AI ጋር ይገናኛል)
+        await Future.delayed(const Duration(seconds: 3));
+
+        setState(() {
+          _isScanning = false;
+        });
+
+        // የ AI ምርመራ ውጤት ማሳያ
+        _showAnalysisResult();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('ካሜራውን መክፈት አልተቻለም!')),
+      );
+    }
   }
 
-  void _startVoiceSearch() {
-    // የድምፅ ፍለጋ እዚህ ይገባል
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('የድምፅ ትንተና በቅርቡ ይጀመራል...')),
+  void _showAnalysisResult() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.green),
+            const SizedBox(width: 10),
+            Text('የ AI ትንተና ውጤት', style: GoogleFonts.notoSans(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('🌿 ተክል: ሞሪንጋ (Moringa)'),
+            const SizedBox(height: 10),
+            const Text('🧪 ንጥረ ነገር: ቪታሚን ሲ፣ ፕሮቲን፣ አይረን'),
+            const SizedBox(height: 10),
+            const Text('💪 ጥቅም: ለደም ግፊት እና ለስኳር በሽታ ይረዳል'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              setState(() { _selectedImage = null; });
+            },
+            child: const Text('ዝጋ'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -81,7 +137,6 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
           ],
         ),
         actions: [
-          // የቋንቋ መምረጫ
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: DropdownButtonHideUnderline(
@@ -89,16 +144,13 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                 value: selectedLanguage,
                 icon: const Icon(Icons.language, color: Colors.black54),
                 items: <String>['አማርኛ', 'English', 'Afaan Oromoo', 'Tigrinya']
-                    .map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+                    .map((String value) => DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        ))
+                    .toList(),
                 onChanged: (String? newValue) {
-                  setState(() {
-                    selectedLanguage = newValue!;
-                  });
+                  setState(() { selectedLanguage = newValue!; });
                 },
               ),
             ),
@@ -119,70 +171,75 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
                   color: Colors.black87,
                 ),
               ),
-              const SizedBox(height: 10),
-              Text(
-                'እፅዋትን፣ ማዕድናትን ወይም ህመምዎን በመግለፅ ባህላዊ እና ዘመናዊ መፍትሄዎችን ያግኙ።',
-                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-              ),
               const SizedBox(height: 30),
               
-              // ዋናው የፍለጋ እና ካሜራ ክፍል
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(15),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.grey.withOpacity(0.1),
-                      spreadRadius: 5,
-                      blurRadius: 10,
-                    ),
-                  ],
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: 'ህመምዎን ወይም እፅዋቱን ይፃፉ...',
-                    border: InputBorder.none,
-                    contentPadding: const EdgeInsets.all(20),
-                    prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                    suffixIcon: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.mic, color: Colors.blue),
-                          onPressed: _startVoiceSearch,
+              // ፎቶ ከተነሳ በኋላ የሚታየው የምስል እና አኒሜሽን ክፍል
+              if (_selectedImage != null)
+                Center(
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.file(
+                          _selectedImage!,
+                          height: 250,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.document_scanner_outlined, color: Color(0xFF2E7D32)),
-                          onPressed: _openCameraScanner,
+                      ),
+                      const SizedBox(height: 20),
+                      if (_isScanning)
+                        Column(
+                          children: [
+                            const CircularProgressIndicator(color: Color(0xFF2E7D32)),
+                            const SizedBox(height: 10),
+                            Text(
+                              'AI እፅዋቱን እየመረመረ ነው...',
+                              style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 10),
-                      ],
+                    ],
+                  ),
+                )
+              else
+                // ዋናው የፍለጋ ክፍል (ምስል ከሌለ የሚታይ)
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(15),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.grey.withOpacity(0.1),
+                        spreadRadius: 5,
+                        blurRadius: 10,
+                      ),
+                    ],
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'ህመምዎን ወይም እፅዋቱን ይፃፉ...',
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(20),
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                      suffixIcon: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.mic, color: Colors.blue),
+                            onPressed: () {},
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.document_scanner_outlined, color: Color(0xFF2E7D32)),
+                            onPressed: _openCameraScanner,
+                          ),
+                          const SizedBox(width: 10),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-              
-              const SizedBox(height: 40),
-              Text(
-                'ዋና ዋና አገልግሎቶች',
-                style: GoogleFonts.notoSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 15),
-              
-              // አገልግሎቶች
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildFeatureCard(Icons.local_florist, 'እፅዋት ማወቂያ', Colors.green),
-                  _buildFeatureCard(Icons.science, 'ንጥረነገር ትንተና', Colors.orange),
-                  _buildFeatureCard(Icons.medical_services, 'የህክምና ምክር', Colors.blue),
-                ],
-              )
             ],
           ),
         ),
@@ -191,28 +248,8 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
         onPressed: _openCameraScanner,
         backgroundColor: const Color(0xFF2E7D32),
         icon: const Icon(Icons.camera_alt, color: Colors.white),
-        label: const Text('ስካን አድርግ', style: TextStyle(color: Colors.white)),
+        label: const Text('ካሜራ ክፈት', style: TextStyle(color: Colors.white)),
       ),
-    );
-  }
-
-  Widget _buildFeatureCard(IconData icon, String title, Color color) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 30),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-        ),
-      ],
     );
   }
 }
