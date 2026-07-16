@@ -26,10 +26,11 @@ jobs:
           cache: true
 
       - name: Build APK
-        run: flutter build apk --release --build-name=1.0 --build-number=1
+        run: flutter build apk --release
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: NatureHeal-APK
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: build/app/outputs/flutter-apk/app-release-arm64-v8a.apk
+
