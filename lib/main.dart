@@ -46,12 +46,14 @@ class _HomePageState extends State<HomePage> {
     setState(() { _isLoading = true; });
     
     try {
-      // ይህ ዳታቤዝህን ለሰፊ መረጃ ይጠይቃል
-      final data = await Supabase.instance.client
+      final response = await Supabase.instance.client
           .from('plants')
           .select('scientific_name, nutrients, health_benefits, traditional_use, modern_medicine_synergy')
           .ilike('scientific_name', '%$value%')
           .maybeSingle();
+
+      // 👉 እዚህ ላይ ነው ዋናው ማስተካከያ የተደረገው! ዳታው Map መሆኑን አሳወቅነው።
+      final data = response as Map<String, dynamic>?;
 
       setState(() {
         if (data != null) {
@@ -94,7 +96,6 @@ class _HomePageState extends State<HomePage> {
         padding: const EdgeInsets.all(20.0),
         child: Column(
           children: [
-            // የፍለጋ ቦታ ከጽሁፍ፣ ድምፅ እና ካሜራ አማራጭ ጋር
             TextField(
               controller: _controller,
               onSubmitted: _searchData,
@@ -128,7 +129,6 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
             const SizedBox(height: 20),
-            // የፍለጋ ውጤት ማሳያ
             Expanded(
               child: _isLoading 
                 ? const Center(child: CircularProgressIndicator())
