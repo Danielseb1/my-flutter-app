@@ -9,8 +9,9 @@ dependencies:
     sdk: flutter
   supabase_flutter: ^2.5.0
   google_fonts: ^6.2.1
-  # ካሜራ እና ጋለሪ ለመክፈት የሚያስችለው አዲሱ ሲስተም
-  image_picker: ^1.1.2 
+  image_picker: ^1.1.2
+  # የእውነተኛው AI (Gemini) ፓኬጅ 👇
+  google_generative_ai: ^0.4.3
 
 dev_dependencies:
   flutter_test:
