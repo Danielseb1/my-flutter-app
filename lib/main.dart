@@ -226,9 +226,7 @@ class _ScannerPageState extends State<ScannerPage> {
                       foregroundColor: Colors.white,
                       textStyle: const TextStyle(fontSize: 18),
                     ),
-                  ),
-          ],
-        ),
+                ),
       ),
     );
   }
@@ -240,56 +238,44 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // በ Supabase dashboard ላይ የምታገኘውን የፕሮጀክት URL እና ANON KEY እዚህ አስገባ
+// በ main.dart ፋይልህ ውስጥ ይህንን አስተካክል
   await Supabase.initialize(
-    url: 'YOUR_SUPABASE_URL', 
-    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+    url: 'https://mstphukumdxcsvtrelkd.supabase.co',
+    anonKey: 'sb_publishable_FckQyv4DiWQGEa20E_s0bQ_PZVhe15d',
   );
 
-  runApp(const NatureHealApp());
-}
-
-// ... የተቀረው የ NatureHealApp ኮድ እንደነበረ ይቀጥላል ...
-// በ HomePage ውስጥ ያለው የ Body ክፍል
-body: Padding(
-  padding: const EdgeInsets.all(20.0),
-  child: Column(
-    children: [
-      // የጥያቄ ሳጥን (ለጽሁፍ)
-      TextField(
-        decoration: InputDecoration(
-          hintText: 'ህመምዎን ወይም የሚፈልጉትን ተክል ይፃፉ...',
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
-          prefixIcon: const Icon(Icons.search),
-        ),
-      ),
-      const SizedBox(height: 20),
-      
-      // የካሜራ እና የድምፅ ቁልፎች
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+// በ _HomePageState ክፍል ውስጥ ያለው build ሜተድ
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(title: const Text('NatureHeal AI')),
+    body: Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Column(
         children: [
-          ElevatedButton.icon(
-            onPressed: () { /* ወደ ካሜራ ይወስዳል */ },
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('ፎቶ ስካን'),
+          // 1. የፍለጋ ሳጥኑ (TextField)
+          TextField(
+            controller: _controller,
+            onSubmitted: (value) => _searchPlant(value), // የፍለጋ ተግባሩን ያነሳሳል
+            decoration: const InputDecoration(
+              hintText: 'ዕፅዋትን በሳይንሳዊ ስም ይፈልጉ...',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+            ),
           ),
-          ElevatedButton.icon(
-            onPressed: () { /* የድምፅ ማዘዣ ይከፍታል */ },
-            icon: const Icon(Icons.mic),
-            label: const Text('በድምፅ ይጠይቁ'),
+          const SizedBox(height: 20),
+
+          // 2. የውጤት ማሳያው (Text Widget)
+          Text(
+            _result,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
+          
+          const SizedBox(height: 20),
+          // ከዚህ በታች ሌሎች ቁልፎችህን ወይም Recent Scans ሊስትህን ማስቀመጥ ትችላለህ
         ],
       ),
-    ],
-  ),
-),
-// ከ Supabase ዳታ ለማምጣት የሚረዳ ተግባር
-Future<List<Map<String, dynamic>>> fetchPlantData(String plantName) async {
-  final response = await Supabase.instance.client
-      .from('plants') // የሰንጠረዡ ስም
-      .select('*')
-      .ilike('scientific_name', '%$plantName%'); // መፈለጊያ
-      
-  return response;
+    ),
+  );
 }
 
