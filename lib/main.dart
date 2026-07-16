@@ -227,3 +227,54 @@ class _ScannerPageState extends State<ScannerPage> {
     );
   }
 }
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // በ Supabase dashboard ላይ የምታገኘውን የፕሮጀክት URL እና ANON KEY እዚህ አስገባ
+  await Supabase.initialize(
+    url: 'YOUR_SUPABASE_URL', 
+    anonKey: 'YOUR_SUPABASE_ANON_KEY',
+  );
+
+  runApp(const NatureHealApp());
+}
+
+// ... የተቀረው የ NatureHealApp ኮድ እንደነበረ ይቀጥላል ...
+// በ HomePage ውስጥ ያለው የ Body ክፍል
+body: Padding(
+  padding: const EdgeInsets.all(20.0),
+  child: Column(
+    children: [
+      // የጥያቄ ሳጥን (ለጽሁፍ)
+      TextField(
+        decoration: InputDecoration(
+          hintText: 'ህመምዎን ወይም የሚፈልጉትን ተክል ይፃፉ...',
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(15)),
+          prefixIcon: const Icon(Icons.search),
+        ),
+      ),
+      const SizedBox(height: 20),
+      
+      // የካሜራ እና የድምፅ ቁልፎች
+      Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          ElevatedButton.icon(
+            onPressed: () { /* ወደ ካሜራ ይወስዳል */ },
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('ፎቶ ስካን'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () { /* የድምፅ ማዘዣ ይከፍታል */ },
+            icon: const Icon(Icons.mic),
+            label: const Text('በድምፅ ይጠይቁ'),
+          ),
+        ],
+      ),
+    ],
+  ),
+),
+
