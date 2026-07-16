@@ -21,61 +21,67 @@ class NatureHealApp extends StatelessWidget {
   }
 }
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
   const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String _result = "ፍለጋ ይጀምሩ...";
+  final TextEditingController _controller = TextEditingController();
+
+  Future<void> _searchPlant(String value) async {
+    final data = await Supabase.instance.client
+        .from('plants')
+        .select('*')
+        .ilike('scientific_name', '%$value%')
+        .maybeSingle();
+    
+    setState(() {
+      if (data != null) {
+        _result = "ስም: ${data['scientific_name']}\nንጥረ ነገሮች: ${data['nutrients']}";
+      } else {
+        _result = "ይህ ተክል አልተገኘም";
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text('NatureHeal AI', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.green[700],
-        foregroundColor: Colors.white,
-        centerTitle: true,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('NatureHeal AI')),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'እንኳን ደህና መጡ!',
-              style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'እፅዋትን፣ ዛፎችን እና ማዕድናትን ስካን በማድረግ የጤና ጥቅሞቻቸውን፣ ቪታሚኖችን እና ማዕድናቶቻቸውን ያግኙ።',
-              style: TextStyle(fontSize: 16, color: Colors.black54, height: 1.5),
-            ),
-            const SizedBox(height: 40),
-            
-            // ዋናው የስካን ማድረጊያ ቁልፍ
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // ተጠቃሚው ሲጫን ወደ ስካነር (ካሜራ) ገጽ ይወስደዋል
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ScannerPage()),
-                  );
-                },
-                icon: const Icon(Icons.document_scanner, size: 28),
-                label: const Text('አዲስ ስካን ጀምር (Scan)', style: TextStyle(fontSize: 18)),
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  backgroundColor: Colors.green[600],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  elevation: 5,
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
-            
+          // በ Column children ውስጥ ይህንን ብቻ ተጠቀም
+children: [
+  // 1. የፍለጋ ሳጥን
+  TextField(
+    controller: _controller,
+    onSubmitted: (value) => _searchPlant(value),
+    decoration: const InputDecoration(
+      hintText: 'ዕፅዋትን በሳይንሳዊ ስም ይፈልጉ...',
+      prefixIcon: Icon(Icons.search),
+      border: OutlineInputBorder(),
+    ),
+  ),
+  const SizedBox(height: 20),
+  
+  // 2. ውጤት ማሳያ
+  Text(
+    _result, 
+    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  ),
+  
+  const SizedBox(height: 20),
+  // ... የተቀረው የ Recent Scans ኮድህ ከዚህ በታች ይቀጥላል
+
+      ),
+    );
+  }
+}
             const Text(
               'የቅርብ ጊዜ ፍለጋዎች (Recent Scans)',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black87),
