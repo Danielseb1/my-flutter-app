@@ -129,7 +129,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
       _showAnalysisResult(finalResult);
       await _flutterTts.speak(finalResult); // በድምፅ ማሰማት (Text to Voice)
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uiTexts[_selectedLanguage]!['error']!)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ስህተት: $e')));
     } finally {
       setState(() => _isAnalyzing = false);
     }
@@ -160,7 +160,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
         await _flutterTts.speak(finalResult); // በድምፅ ማሰማት
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(uiTexts[_selectedLanguage]!['error']!)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('ስህተት: $e')));
     } finally {
       setState(() => _isAnalyzing = false);
     }
