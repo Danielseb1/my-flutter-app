@@ -121,11 +121,10 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
 
     try {
       final model = GenerativeModel(
-  model: 'gemini-1.5-flash',
+  model: 'gemini-pro',
   apiKey: apiKey,
   apiVersion: ApiVersion.v1, // ይህንን መስመር ጨምርበት
 );
-
       final promptText = 'Answer precisely in $_selectedLanguage. The user is asking about: "$query". Provide: 1. Exact Name, 2. Vitamins/Proteins/Nutrients it contains, 3. Health benefits, 4. Traditional medicine usage, 5. Synergy or relation with Modern medicine.';
       
       final response = await model.generateContent([Content.text(promptText)]);
@@ -152,11 +151,10 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
         });
 
         final model = GenerativeModel(
-  model: 'gemini-1.5-flash',
+  model: 'gemini-pro',
   apiKey: apiKey,
   apiVersion: ApiVersion.v1, // ይህንን መስመር ጨምርበት
 );
-
         final imageBytes = await _selectedImage!.readAsBytes();
         
         final promptText = 'Answer completely in $_selectedLanguage. Analyze this image (plant, fruit, spice, bark, mineral, or symptom). Provide: 1. Identification Name, 2. Vitamins/Proteins/Nutrients present, 3. Health benefits, 4. Traditional medicine application, 5. Synergy with Modern medicine.';
