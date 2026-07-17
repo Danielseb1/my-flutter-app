@@ -54,7 +54,7 @@ class _MainPortalScreenState extends State<MainPortalScreen> {
   final FlutterTts _flutterTts = FlutterTts();
   bool _isListening = false;
 
-  final String apiKey = 'AIzaSyAkMzSH3OaT-OdAek5JoFWXBqF5Fp6lzzQ';
+  final String apiKey = 'AQ.Ab8RN6ISQxNHpoxJgBULMFpHrmmcGexlcdjpNYzmfpaN1OcXEQ';
 
   final Map<String, Map<String, String>> uiTexts = {
     'አማርኛ': {
