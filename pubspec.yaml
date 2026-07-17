@@ -1,17 +1,21 @@
 name: natureheal_ai
 description: A professional, global AI-powered health portal.
 publish_to: 'none'
+
 version: 1.0.0+1
+
 environment:
   sdk: '>=3.0.0 <4.0.0'
+
 dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.5.0
   google_fonts: ^6.2.1
   image_picker: ^1.1.2
-  # የእውነተኛው AI (Gemini) ፓኬጅ 👇
   google_generative_ai: ^0.4.3
+  speech_to_text: ^6.6.0
+  flutter_tts: ^4.0.2
 
 dev_dependencies:
   flutter_test:
